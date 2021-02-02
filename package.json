@@ -20,6 +20,10 @@
   "dependencies": {
     "@rollup/plugin-node-resolve": "^11.1.1",
     "@tensorflow-models/posenet": "^2.2.1",
-    "regenerator-runtime": "^0.13.7"
+    "@tensorflow/tfjs-backend-webgl": "^3.0.0",
+    "@tensorflow/tfjs-converter": "^3.0.0",
+    "@tensorflow/tfjs-core": "^3.0.0",
+    "regenerator-runtime": "^0.13.7",
+    "rollup-plugin-commonjs": "^10.1.0"
   }
 }

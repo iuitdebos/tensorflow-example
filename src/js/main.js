@@ -1,8 +1,8 @@
 import '../css/index.scss';
 
 import 'regenerator-runtime';
-
-import { loadMediaDevices, streamToTarget } from './media-devices';
+import * as Posenet from '@tensorflow-models/posenet';
+import '@tensorflow/tfjs-backend-webgl';
 
 (async () => {
   // App variables
@@ -17,51 +17,65 @@ import { loadMediaDevices, streamToTarget } from './media-devices';
   const videoEl = videoRoot.querySelector('.js-video');
   const videoDescription = videoRoot.querySelector('.js-video-description');
 
-  // Load devices
-  const reloadDevices = async () => {
-    const devices = await loadMediaDevices();
-    _app.availableVideoDevices = devices.filter(device => device.kind === 'videoinput');
-    _app.videoDeviceIndex = 0;
-  }
-
-  // Load the stream by index into the video element
-  const loadStreamByIndex = (index) => {
-    if (index >= 0 && index < _app.availableVideoDevices.length) {
-      // Load new stream by deviceId
-      streamToTarget(videoEl, {
-        ..._app.videoConstraints,
-        deviceId: {
-          exact: _app.availableVideoDevices[index].deviceId,
-        },
-      });
-
-      // Update UI
-      videoDescription.innerText = _app.availableVideoDevices[index].label;
-    }
-  };
-
-  // Setup input source toggles
-  const onToggleSource = async (e) => {
-    e.preventDefault();
-    
-    if (_app.availableVideoDevices.length > 0) {
-      _app.videoDeviceIndex = (_app.videoDeviceIndex + 1) % _app.availableVideoDevices.length;
-      loadStreamByIndex(_app.videoDeviceIndex);
-    } else {
-      // If there are no available devices, attempt again
-      await reloadDevices();
-      loadStreamByIndex(0);
-    }
-  }
-
   // Attach event listeners
   const sourceToggles = document.querySelectorAll('.js-toggle-video-source');
   sourceToggles.forEach((toggle) => {
     toggle.addEventListener('click', onToggleSource);
   });
 
+  // Load devices
+  async function loadDevices() {
+    if ('mediaDevices' in navigator && 'enumerateDevices' in navigator.mediaDevices) {
+      // Gave permission, query for devices
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      _app.availableVideoDevices = devices.filter(device => device.kind === 'videoinput');
+      _app.videoDeviceIndex = 0;
+
+      if (_app.availableVideoDevices.length > 0) {
+        _app.posenet = await Posenet.load();
+      }
+    }
+  }
+
+  // Load the stream by index into the video element
+  async function loadStreamByIndex(index) {
+    if (index >= 0 && index < _app.availableVideoDevices.length) {
+      // Load new stream by deviceId
+      if ('mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          ..._app.videoConstraints,
+          deviceId: {
+            exact: _app.availableVideoDevices[index].deviceId,
+          },
+        });
+        videoEl.srcObject = stream;
+
+        // Update UI
+        videoDescription.innerText = _app.availableVideoDevices[index].label;
+
+        videoEl.onloadedmetadata = () => {
+          applyPosenet();
+        };
+      }
+    }
+  };
+
+  // Setup input source toggles
+  async function onToggleSource(e) {
+    e.preventDefault();
+    
+    if (_app.availableVideoDevices.length > 0) {
+      _app.videoDeviceIndex = (_app.videoDeviceIndex + 1) % _app.availableVideoDevices.length;
+      await loadStreamByIndex(_app.videoDeviceIndex);
+    } else {
+      // If there are no available devices, attempt again
+      await loadDevices();
+      await loadStreamByIndex(0);
+    }
+  }
+
   // Initial load
-  await reloadDevices();
+  await loadDevices();
   if (_app.availableVideoDevices.length > 0) {
     // Check if we need to be able to swap between devices
     if (_app.availableVideoDevices.length > 1) {
@@ -69,6 +83,18 @@ import { loadMediaDevices, streamToTarget } from './media-devices';
     }
   
     // Default load first device
-    loadStreamByIndex(0);
+    await loadStreamByIndex(0);
+  }
+
+  // Posenet
+  function applyPosenet() {
+    async function posenetFrame() {
+      console.log('posenet frame');
+      const pose = await _app.posenet.estimateSinglePose(videoEl, {
+        flipHorizontal: false,
+      });
+      console.log(pose);
+    }
+    requestAnimationFrame(posenetFrame);
   }
 })();
