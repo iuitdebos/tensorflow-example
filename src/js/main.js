@@ -1,7 +1,14 @@
-// Load in CSS
 import '../css/index.scss';
-
-// Vendor
 import './vendor/modernizr-3.11.2.min';
 
-console.log('Running');
+import { initMediaDevices } from './media-devices';
+
+const videoRoot = document.querySelector('.js-video-root');
+
+initMediaDevices({ video: true }).then((mediaDevices) => {
+  console.log(mediaDevices);
+  videoRoot.srcObject = mediaDevices.stream;
+}).catch((err) => {
+  console.error(err);
+  window.alert(err);
+});
