@@ -22,8 +22,13 @@
 <body>
   <div class='container'>
     
-    <div class='video-container'>
-      <video class='js-video-root' autoplay></video>
+    <div class='video js-video-root'>
+      <video class='js-video' autoplay></video>
+
+      <div class='video__controls'>
+        <span class='video__source js-video-description'>No video source</span>
+        <button type='button' class='video__source-toggle js-toggle-video-source'>Change source</button>
+      </div>
     </div>
   </div>
 

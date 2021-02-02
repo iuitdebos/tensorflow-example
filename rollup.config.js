@@ -16,7 +16,6 @@ export default {
       output: 'dist/style.css',
     }),
     serve({
-      open: true,
       contentBase: ['.', 'dist/'],
       port: 3000,
     }),
