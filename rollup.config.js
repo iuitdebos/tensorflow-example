@@ -12,7 +12,7 @@ export default {
   },
   plugins: [
     nodeResolve({ browser: true }),
-    commonjs(),
+    commonjs({ sourceMap: false }),
     babel({
       babelHelpers: 'bundled',
     }),

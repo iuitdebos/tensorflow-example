@@ -1,8 +1,10 @@
 import '../css/index.scss';
 
 import 'regenerator-runtime';
-import * as Posenet from '@tensorflow-models/posenet';
-import '@tensorflow/tfjs-backend-webgl';
+
+// For some reason importing it through npm brings some stupid error. Most likely has to do with the rollup build setup,
+// import * as posenet from '@tensorflow-models/posenet';
+// import '@tensorflow/tfjs-backend-webgl';
 
 (async () => {
   // App variables
@@ -32,7 +34,7 @@ import '@tensorflow/tfjs-backend-webgl';
       _app.videoDeviceIndex = 0;
 
       if (_app.availableVideoDevices.length > 0) {
-        _app.posenet = await Posenet.load();
+        _app.posenet = await posenet.load();
       }
     }
   }
@@ -89,11 +91,13 @@ import '@tensorflow/tfjs-backend-webgl';
   // Posenet
   function applyPosenet() {
     async function posenetFrame() {
-      console.log('posenet frame');
-      const pose = await _app.posenet.estimateSinglePose(videoEl, {
-        flipHorizontal: false,
-      });
-      console.log(pose);
+      if (!videoEl.paused) {
+        const pose = await _app.posenet.estimateSinglePose(videoEl, {
+          flipHorizontal: false,
+        });
+        console.log(pose);
+      }
+      requestAnimationFrame(posenetFrame);
     }
     requestAnimationFrame(posenetFrame);
   }
