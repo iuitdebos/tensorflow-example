@@ -1,6 +1,7 @@
 import scss from 'rollup-plugin-scss';
 import serve from 'rollup-plugin-serve';
 import babel from '@rollup/plugin-babel';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
 
 export default {
   input: 'src/js/main.js',
@@ -19,5 +20,6 @@ export default {
       contentBase: ['.', 'dist/'],
       port: 3000,
     }),
+    nodeResolve(),
   ],
 };
