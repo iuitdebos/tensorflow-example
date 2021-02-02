@@ -1,0 +1,22 @@
+{
+  "name": "tensorflow-example",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:iuitdebos/tensorflow-example.git",
+  "author": "Ingmar uit de Bos <ingmar.uitdebos@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "rollup": "^2.38.4",
+    "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-scss": "^2.6.1",
+    "sass": "^1.32.6"
+  },
+  "dependencies": {
+    "@tensorflow-models/posenet": "^2.2.1"
+  }
+}
