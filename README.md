@@ -3,4 +3,9 @@ Example integration / proof-of-concept of TensorFlow PoseNet model on top of Med
 
 I gave myself ~4 hours for this example which mostly worked out.
 
-Github Pages: [https://iuitdebos.github.io/tensorflow-example/](iuitdebos.github.io/tensorflow-example)
+Github Pages: [iuitdebos.github.io/tensorflow-example](https://iuitdebos.github.io/tensorflow-example/)
+
+👁️ on both eyes
+👄 a bit below the nose (y + a), so don't be upside down
+👌 on left wrist
+👋 on right wrist
