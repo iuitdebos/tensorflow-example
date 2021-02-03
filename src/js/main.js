@@ -12,6 +12,7 @@ import 'regenerator-runtime';
     videoConstraints: {
       video: true,
     },
+    minConfidence = 0.6,
   };
 
   // Setup DOM elements
@@ -30,13 +31,11 @@ import 'regenerator-runtime';
 
   // Resize handling (should be throttled for production)
   function onResize() {
-    videoEl.style.width = `${window.innerWidth}px`;
-    videoEl.style.height = `${window.innerHeight}px`;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const videoRatio = videoEl.videoHeight / videoEl.videoWidth;
+    videoEl.width = canvas.width = window.innerWidth;
+    videoEl.height = canvas.height = window.innerWidth * videoRatio;
   }
   window.addEventListener('resize', onResize);
-  onResize();
 
   // Load devices
   async function loadDevices() {
@@ -47,7 +46,12 @@ import 'regenerator-runtime';
       _app.videoDeviceIndex = 0;
 
       if (_app.availableVideoDevices.length > 0) {
-        _app.posenet = await posenet.load();
+        _app.posenet = await posenet.load({
+          architecture: 'MobileNetV1',
+          outputStride: 16,
+          inputResolution: { width: 640, height: 480 },
+          multiplier: 0.75
+        });
       }
     }
   }
@@ -69,6 +73,7 @@ import 'regenerator-runtime';
         videoDescription.innerText = _app.availableVideoDevices[index].label;
 
         videoEl.onloadedmetadata = () => {
+          onResize();
           applyPosenet();
         };
       }
@@ -119,7 +124,7 @@ import 'regenerator-runtime';
       }
   
       const {y, x} = keypoint.position;
-      drawPoint(ctx, y * scale, x * scale, 20, color);
+      drawPoint(ctx, y * scale, x * scale, 5, color);
     }
   }
   // END DEBUG
@@ -143,10 +148,9 @@ import 'regenerator-runtime';
           // draw the emoji
           ctx.fillText('😜😂😍', canvas.width / 2, canvas.height / 2)
         }
-        console.log(pose);
 
         // Draw keypoints
-        drawKeypoints(pose.keypoints, 0.5, ctx);
+        drawKeypoints(pose.keypoints, minConfidence, ctx);
       }
       requestAnimationFrame(posenetFrame);
     }
