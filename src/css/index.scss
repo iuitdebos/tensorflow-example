@@ -1,6 +1,11 @@
 @import './boilerplate/main.scss';
 @import './boilerplate/normalize.scss';
 
+html {
+  font-family: Arial, sans-serif;
+  background-color: #757593;
+}
+
 .container {
   position: relative;
 }
@@ -11,21 +16,46 @@
 
   .video__video {
     position: absolute;
-    top: 0;
-    left: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
   
   .video__canvas {
     position: absolute;
-    top: 0;
-    left: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     pointer-events: none;
   }
 
   .video__controls {
+    display: flex;
+    align-items: center;
     position: absolute;
-    bottom: 5vh;
+    bottom: 10vh;
     left: 50%;
     transform: translate(-50%, 0);
+    white-space: nowrap;
+  }
+
+  .video__source {
+    margin: 10px;
+    padding: 10px 30px;
+    color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    border: 1px solid white;
+    outline: none;
+    cursor: pointer;
+    transition: transform 0.1s ease-in-out;
+    will-change: transform;
+
+    &:hover {
+      transform: scale(0.98);
+    }
+    &:focus {
+      border-color: #47f;
+    }
   }
 }

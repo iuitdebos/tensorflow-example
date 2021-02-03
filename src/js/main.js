@@ -12,13 +12,13 @@ import 'regenerator-runtime';
     videoConstraints: {
       video: true,
     },
+    posenetIsApplied: false,
     minConfidence: 0.6,
   };
 
   // Setup DOM elements
   const videoRoot = document.querySelector('.js-video-root');
   const videoEl = videoRoot.querySelector('.js-video');
-  const videoDescription = videoRoot.querySelector('.js-video-description');
 
   const canvas = videoRoot.querySelector('.js-canvas');
   const ctx = canvas.getContext('2d');
@@ -31,9 +31,11 @@ import 'regenerator-runtime';
 
   // Resize handling (should be throttled for production)
   function onResize() {
-    const videoRatio = videoEl.videoHeight / videoEl.videoWidth;
-    videoEl.width = canvas.width = window.innerWidth;
-    videoEl.height = canvas.height = window.innerWidth * videoRatio;
+    // Aspect ratio = videoEl.videoHeight / videoEl.videoWidth, clamped to window
+    const videoRatio = Math.min(window.innerWidth / videoEl.videoWidth, window.innerHeight / videoEl.videoHeight);
+    
+    videoEl.width = canvas.width = videoEl.videoWidth * videoRatio;
+    videoEl.height = canvas.height = videoEl.videoHeight * videoRatio;
   }
   window.addEventListener('resize', onResize);
 
@@ -70,8 +72,11 @@ import 'regenerator-runtime';
         videoEl.srcObject = stream;
 
         // Update UI
-        videoDescription.innerText = _app.availableVideoDevices[index].label;
+        sourceToggles.forEach((toggle) => {
+          toggle.innerText = `${_app.availableVideoDevices[index].label} :: ${_app.videoDeviceIndex + 1} / ${_app.availableVideoDevices.length}`;
+        });
 
+        // Set correct sizes on loading the video stream and start posenet
         videoEl.onloadedmetadata = () => {
           onResize();
           applyPosenet();
@@ -106,29 +111,7 @@ import 'regenerator-runtime';
     await loadStreamByIndex(0);
   }
 
-
-  // DEBUG (copied from posenet demo)
-  const color = '#FF0000';
-  function drawPoint(ctx, y, x, r, color) {
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, 2 * Math.PI);
-    ctx.fillStyle = color;
-    ctx.fill();
-  }
-  function drawKeypoints(keypoints, minConfidence, ctx, scale = 1) {
-    for (let i = 0; i < keypoints.length; i++) {
-      const keypoint = keypoints[i];
-  
-      if (keypoint.score < minConfidence) {
-        continue;
-      }
-  
-      const {y, x} = keypoint.position;
-      drawPoint(ctx, y * scale, x * scale, 5, color);
-    }
-  }
-  // END DEBUG
-
+  // Draw
   function drawEmoji(emoji, size, x, y) {
     // The size of the emoji is set with the font
     ctx.font = `${size}px serif`;
@@ -138,46 +121,47 @@ import 'regenerator-runtime';
   }
 
   // Posenet
-  function applyPosenet() {
-    async function posenetFrame() {
-      if (!videoEl.paused) {
-        const pose = await _app.posenet.estimateSinglePose(videoEl, {
-          flipHorizontal: false,
-        });
+  async function posenetFrame() {
+    if (!videoEl.paused) {
+      const pose = await _app.posenet.estimateSinglePose(videoEl, {
+        flipHorizontal: false,
+      });
 
-        if (ctx) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          for (let i = 0; i < pose.keypoints.length; i ++) {
-            if (pose.keypoints[i].score > _app.minConfidence) {
-              const { x, y } = pose.keypoints[i].position;
-              switch (pose.keypoints[i].part) {
-                case 'leftEye':
-                  drawEmoji('👁️', 40, x, y);
-                  break;
-                case 'rightEye':
-                  drawEmoji('👁️', 40, x, y);
-                  break;
-                case 'nose':
-                  drawEmoji('👄', 50, x, y + 30);
-                  break;
-                case 'leftWrist':
-                  drawEmoji('👌', 80, x, y);
-                  break;
-                case 'rightWrist':
-                  drawEmoji('👋', 80, x, y);
-                  break;
-                default:
-              }
+        for (let i = 0; i < pose.keypoints.length; i ++) {
+          if (pose.keypoints[i].score > _app.minConfidence) {
+            const { x, y } = pose.keypoints[i].position;
+            switch (pose.keypoints[i].part) {
+              case 'leftEye':
+                drawEmoji('👁️', 40, x, y);
+                break;
+              case 'rightEye':
+                drawEmoji('👁️', 40, x, y);
+                break;
+              case 'nose':
+                drawEmoji('👄', 50, x, y + 30);
+                break;
+              case 'leftWrist':
+                drawEmoji('👌', 80, x, y);
+                break;
+              case 'rightWrist':
+                drawEmoji('👋', 80, x, y);
+                break;
+              default:
             }
           }
-
-          // DEBUG - Draw keypoints
-          // drawKeypoints(pose.keypoints, _app.minConfidence, ctx);
         }
       }
-      requestAnimationFrame(posenetFrame);
     }
     requestAnimationFrame(posenetFrame);
+  }
+
+  function applyPosenet() {
+    if (!_app.posenetIsApplied) {
+      _app.posenetIsApplied = true;
+      requestAnimationFrame(posenetFrame);
+    }
   }
 })();
