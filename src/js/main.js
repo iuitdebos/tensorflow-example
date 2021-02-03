@@ -42,7 +42,7 @@ import 'regenerator-runtime';
   // Load devices
   async function loadDevices() {
     if ('mediaDevices' in navigator && 'enumerateDevices' in navigator.mediaDevices) {
-      // Gave permission, query for devices
+      // Query for devices
       const devices = await navigator.mediaDevices.enumerateDevices();
       _app.availableVideoDevices = devices.filter(device => device.kind === 'videoinput');
       
@@ -51,7 +51,9 @@ import 'regenerator-runtime';
         _app.videoDeviceIndex = 0;
       }
 
+      // If there are video devices available, init posenet
       if (_app.availableVideoDevices.length > 0 && !_app.posenetIsLoaded) {
+        _app.posenetIsLoaded = true;
         _app.posenet = await posenet.load({
           architecture: 'MobileNetV1',
           outputStride: 16,
@@ -91,7 +93,7 @@ import 'regenerator-runtime';
         const stream = await navigator.mediaDevices.getUserMedia({ video: _app.videoConstraints });
         videoEl.srcObject = stream;
 
-        // Set correct sizes on loading the video stream and start posenet
+        // Set correct sizes on loading the video stream and start running posenet
         videoEl.onloadedmetadata = () => {
           onResize();
           applyPosenet();
@@ -113,6 +115,7 @@ import 'regenerator-runtime';
     e.preventDefault();
     
     if (_app.availableVideoDevices.length > 0) {
+      // Load next available device, wrap back to 0
       _app.videoDeviceIndex = (_app.videoDeviceIndex + 1) % _app.availableVideoDevices.length;
       await loadStreamByIndex(_app.videoDeviceIndex);
     } else {
@@ -136,7 +139,6 @@ import 'regenerator-runtime';
 
   // Draw
   function drawEmoji(emoji, size, x, y) {
-    // The size of the emoji is set with the font
     ctx.font = `${size}px serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
