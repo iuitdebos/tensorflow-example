@@ -2,5 +2,32 @@
 @import './boilerplate/normalize.scss';
 
 .container {
-  position: relative; 
+  position: relative;
+}
+
+.video {
+  position: relative;
+  min-height: 100vh;
+
+  .video__video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .video__canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+  }
+
+  .video__controls {
+    position: absolute;
+    bottom: 5vh;
+    left: 50%;
+    transform: translate(-50%, 0);
+  }
 }

@@ -19,11 +19,24 @@ import 'regenerator-runtime';
   const videoEl = videoRoot.querySelector('.js-video');
   const videoDescription = videoRoot.querySelector('.js-video-description');
 
+  const canvas = videoRoot.querySelector('.js-canvas');
+  const ctx = canvas.getContext('2d');
+
   // Attach event listeners
   const sourceToggles = document.querySelectorAll('.js-toggle-video-source');
   sourceToggles.forEach((toggle) => {
     toggle.addEventListener('click', onToggleSource);
   });
+
+  // Resize handling (should be throttled for production)
+  function onResize() {
+    videoEl.style.width = `${window.innerWidth}px`;
+    videoEl.style.height = `${window.innerHeight}px`;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', onResize);
+  onResize();
 
   // Load devices
   async function loadDevices() {
@@ -88,6 +101,29 @@ import 'regenerator-runtime';
     await loadStreamByIndex(0);
   }
 
+
+  // DEBUG (copied from posenet demo)
+  const color = '#FF0000';
+  function drawPoint(ctx, y, x, r, color) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+  function drawKeypoints(keypoints, minConfidence, ctx, scale = 1) {
+    for (let i = 0; i < keypoints.length; i++) {
+      const keypoint = keypoints[i];
+  
+      if (keypoint.score < minConfidence) {
+        continue;
+      }
+  
+      const {y, x} = keypoint.position;
+      drawPoint(ctx, y * scale, x * scale, 20, color);
+    }
+  }
+  // END DEBUG
+
   // Posenet
   function applyPosenet() {
     async function posenetFrame() {
@@ -95,7 +131,22 @@ import 'regenerator-runtime';
         const pose = await _app.posenet.estimateSinglePose(videoEl, {
           flipHorizontal: false,
         });
+
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          // The size of the emoji is set with the font
+          ctx.font = '100px serif'
+          // use these alignment properties for "better" positioning
+          ctx.textAlign = "center"; 
+          ctx.textBaseline = "middle"; 
+          // draw the emoji
+          ctx.fillText('😜😂😍', canvas.width / 2, canvas.height / 2)
+        }
         console.log(pose);
+
+        // Draw keypoints
+        drawKeypoints(pose.keypoints, 0.5, ctx);
       }
       requestAnimationFrame(posenetFrame);
     }
