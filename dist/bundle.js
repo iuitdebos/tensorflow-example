@@ -976,36 +976,63 @@ _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
                   switch (_context2.prev = _context2.next) {
                     case 0:
                       if (!(index >= 0 && index < _app.availableVideoDevices.length)) {
-                        _context2.next = 8;
+                        _context2.next = 14;
                         break;
                       }
 
                       if (!('mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices)) {
-                        _context2.next = 8;
+                        _context2.next = 14;
                         break;
                       }
 
-                      _context2.next = 4;
-                      return navigator.mediaDevices.getUserMedia(_objectSpread2(_objectSpread2({}, _app.videoConstraints), {}, {
+                      // Stop any existing stream
+                      if (videoEl.srcObject) {
+                        videoEl.srcObject.getTracks().forEach(function (track) {
+                          track.stop();
+                        });
+                      } // Make sure cellphones have time to switch off cameras
+
+
+                      _context2.next = 5;
+                      return new Promise(function (resolve) {
+                        setTimeout(function () {
+                          resolve();
+                        }, 500);
+                      });
+
+                    case 5:
+                      // Set up constraints with new DeviceID
+                      _app.videoConstraints = _objectSpread2(_objectSpread2({}, _app.videoConstraints), {}, {
                         deviceId: {
                           exact: _app.availableVideoDevices[index].deviceId
                         }
-                      }));
+                      }); // Load new stream by deviceId
 
-                    case 4:
+                      _context2.next = 8;
+                      return navigator.mediaDevices.getUserMedia({
+                        video: _app.videoConstraints
+                      });
+
+                    case 8:
                       stream = _context2.sent;
-                      videoEl.srcObject = stream; // Update UI
-
-                      sourceToggles.forEach(function (toggle) {
-                        toggle.innerText = "".concat(_app.availableVideoDevices[index].label, " :: ").concat(_app.videoDeviceIndex + 1, " / ").concat(_app.availableVideoDevices.length);
-                      }); // Set correct sizes on loading the video stream and start posenet
+                      videoEl.srcObject = stream; // Set correct sizes on loading the video stream and start posenet
 
                       videoEl.onloadedmetadata = function () {
                         onResize();
                         applyPosenet();
-                      };
+                      }; // After we've gotten permissions, reload devices to get their labels
 
-                    case 8:
+
+                      _context2.next = 13;
+                      return loadDevices();
+
+                    case 13:
+                      // Update UI
+                      sourceToggles.forEach(function (toggle) {
+                        toggle.innerText = "".concat(_app.availableVideoDevices[index].label, " :: ").concat(_app.videoDeviceIndex + 1, " / ").concat(_app.availableVideoDevices.length);
+                      });
+
+                    case 14:
                     case "end":
                       return _context2.stop();
                   }
@@ -1038,10 +1065,13 @@ _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
                       devices = _context.sent;
                       _app.availableVideoDevices = devices.filter(function (device) {
                         return device.kind === 'videoinput';
-                      });
-                      _app.videoDeviceIndex = 0;
+                      }); // If videoDeviceIndex is an invalid one after reloading the devices, reset to 0
 
-                      if (!(_app.availableVideoDevices.length > 0)) {
+                      if (_app.videoDeviceIndex >= _app.availableVideoDevices.length) {
+                        _app.videoDeviceIndex = 0;
+                      }
+
+                      if (!(_app.availableVideoDevices.length > 0 && !_app.posenetIsLoaded)) {
                         _context.next = 10;
                         break;
                       }
@@ -1083,9 +1113,9 @@ _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
 
           // App variables
           window._app = {
-            videoConstraints: {
-              video: true
-            },
+            videoDeviceIndex: 0,
+            videoConstraints: {},
+            posenetIsLoaded: false,
             posenetIsApplied: false,
             minConfidence: 0.6
           }; // Setup DOM elements

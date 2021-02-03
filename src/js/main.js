@@ -9,9 +9,9 @@ import 'regenerator-runtime';
 (async () => {
   // App variables
   window._app = {
-    videoConstraints: {
-      video: true,
-    },
+    videoDeviceIndex: 0,
+    videoConstraints: {},
+    posenetIsLoaded: false,
     posenetIsApplied: false,
     minConfidence: 0.6,
   };
@@ -45,9 +45,13 @@ import 'regenerator-runtime';
       // Gave permission, query for devices
       const devices = await navigator.mediaDevices.enumerateDevices();
       _app.availableVideoDevices = devices.filter(device => device.kind === 'videoinput');
-      _app.videoDeviceIndex = 0;
+      
+      // If videoDeviceIndex is an invalid one after reloading the devices, reset to 0
+      if (_app.videoDeviceIndex >= _app.availableVideoDevices.length) {
+        _app.videoDeviceIndex = 0;
+      }
 
-      if (_app.availableVideoDevices.length > 0) {
+      if (_app.availableVideoDevices.length > 0 && !_app.posenetIsLoaded) {
         _app.posenet = await posenet.load({
           architecture: 'MobileNetV1',
           outputStride: 16,
@@ -61,26 +65,45 @@ import 'regenerator-runtime';
   // Load the stream by index into the video element
   async function loadStreamByIndex(index) {
     if (index >= 0 && index < _app.availableVideoDevices.length) {
-      // Load new stream by deviceId
       if ('mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices) {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        // Stop any existing stream
+        if (videoEl.srcObject) {
+          videoEl.srcObject.getTracks().forEach(track => {
+            track.stop();
+          });
+        }
+        // Make sure cellphones have time to switch off cameras
+        await new Promise((resolve) => {
+          setTimeout(() => {
+            resolve();
+          }, 500);
+        });
+
+        // Set up constraints with new DeviceID
+        _app.videoConstraints = {
           ..._app.videoConstraints,
           deviceId: {
             exact: _app.availableVideoDevices[index].deviceId,
           },
-        });
-        videoEl.srcObject = stream;
+        };
 
-        // Update UI
-        sourceToggles.forEach((toggle) => {
-          toggle.innerText = `${_app.availableVideoDevices[index].label} :: ${_app.videoDeviceIndex + 1} / ${_app.availableVideoDevices.length}`;
-        });
+        // Load new stream by deviceId
+        const stream = await navigator.mediaDevices.getUserMedia({ video: _app.videoConstraints });
+        videoEl.srcObject = stream;
 
         // Set correct sizes on loading the video stream and start posenet
         videoEl.onloadedmetadata = () => {
           onResize();
           applyPosenet();
         };
+
+        // After we've gotten permissions, reload devices to get their labels
+        await loadDevices();
+
+        // Update UI
+        sourceToggles.forEach((toggle) => {
+          toggle.innerText = `${_app.availableVideoDevices[index].label} :: ${_app.videoDeviceIndex + 1} / ${_app.availableVideoDevices.length}`;
+        });
       }
     }
   };
