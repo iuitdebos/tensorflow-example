@@ -12,7 +12,7 @@ import 'regenerator-runtime';
     videoConstraints: {
       video: true,
     },
-    minConfidence = 0.6,
+    minConfidence: 0.6,
   };
 
   // Setup DOM elements
@@ -129,6 +129,14 @@ import 'regenerator-runtime';
   }
   // END DEBUG
 
+  function drawEmoji(emoji, size, x, y) {
+    // The size of the emoji is set with the font
+    ctx.font = `${size}px serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(emoji, x, y);
+  }
+
   // Posenet
   function applyPosenet() {
     async function posenetFrame() {
@@ -140,17 +148,33 @@ import 'regenerator-runtime';
         if (ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          // The size of the emoji is set with the font
-          ctx.font = '100px serif'
-          // use these alignment properties for "better" positioning
-          ctx.textAlign = "center"; 
-          ctx.textBaseline = "middle"; 
-          // draw the emoji
-          ctx.fillText('😜😂😍', canvas.width / 2, canvas.height / 2)
-        }
+          for (let i = 0; i < pose.keypoints.length; i ++) {
+            if (pose.keypoints[i].score > _app.minConfidence) {
+              const { x, y } = pose.keypoints[i].position;
+              switch (pose.keypoints[i].part) {
+                case 'leftEye':
+                  drawEmoji('👁️', 40, x, y);
+                  break;
+                case 'rightEye':
+                  drawEmoji('👁️', 40, x, y);
+                  break;
+                case 'nose':
+                  drawEmoji('👄', 50, x, y + 30);
+                  break;
+                case 'leftWrist':
+                  drawEmoji('👌', 80, x, y);
+                  break;
+                case 'rightWrist':
+                  drawEmoji('👋', 80, x, y);
+                  break;
+                default:
+              }
+            }
+          }
 
-        // Draw keypoints
-        drawKeypoints(pose.keypoints, minConfidence, ctx);
+          // DEBUG - Draw keypoints
+          // drawKeypoints(pose.keypoints, _app.minConfidence, ctx);
+        }
       }
       requestAnimationFrame(posenetFrame);
     }
